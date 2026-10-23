@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>لعبة كازيون المتكاملة - نسخة المهندسة الصغيرة 👑</title>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            user-select: none; 
+        }
+        
+        body { 
+            min-height: 100vh; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            align-items: center; 
+            overflow: hidden; 
+            position: relative; 
+        }
+
+        /* 👑 التحكم في ظهور واختفاء الشاشات الثلاث بمرونة */
+        .game-screen {
+            width: 100%;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* 1️⃣ خلفية وتنسيقات الشاشة الافتتاحية */
+        #start-screen {
+            background: linear-gradient(to bottom, #ff5500 0%, #ff5500 25%, #001fbe 25%, #00116b 100%); 
+            z-index: 10;
+            padding: 4vh 15px;
+        }
+
+        /* 2️⃣ خلفية الأحمر الناري الحماسي للعب والسرعة */
+        #game-screen {
+            background: linear-gradient(to bottom, #d32f2f 0%, #ff6f00 100%); 
+            z-index: 20;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        /* 3️⃣ خلفية شاشة النتيجة البنفسجية المبهجة للعملاء */
+        #result-screen {
+            background: linear-gradient(to bottom, #d633ff 0%, #b800e6 50%, #660080 100%); 
+            z-index: 30;
+            padding: 4vh 15px;
+        }
+
+        /* 💎 جزيئات اللمعان وهالات الضوء للشاشة الافتتاحية */
+        .glitter-sparkle { position: absolute; background-color: #ffffff; border-radius: 50%; opacity: 0.8; z-index: 2; filter: drop-shadow(0 0 4px #00f2fe) drop-shadow(0 0 2px #ffffff); }
+        .corner-glow-beam { position: absolute; width: 350px; height: 350px; border-radius: 50%; pointer-events: none; opacity: 0.5; filter: blur(55px); z-index: 2; }
+        .glow-top-right { top: 15vh; right: -50px; background: radial-gradient(circle, #ffffff 0%, transparent 70%); }
+        .glow-top-left { top: 15vh; left: -50px; background: radial-gradient(circle, #00f2fe 0%, transparent 70%); }
+        .glow-bottom-right { bottom: -50px; right: -50px; background: radial-gradient(circle, #ff5500 0%, transparent 70%); }
+        .glow-bottom-left { bottom: -50px; left: -50px; background: radial-gradient(circle, #ffffff 0%, transparent 70%); }
+        /* وشعار كازيون والبانر البرتقالي */
+        .kazyon-top-banner { position: absolute; top: 0; left: 0; width: 100%; height: 25vh; background-color: #ff5500; display: flex; flex-direction: row-reverse; justify-content: space-between; align-items: center; padding: 0 4vw; z-index: 5; }
+        .promo-navy-badge { background-color: #1a335d; border: 5px solid #ffffff; border-top: none; color: #ffffff; font-weight: 900; text-align: center; line-height: 1.2; box-shadow: 0 12px 30px rgba(0,0,0,0.25); position: absolute; top: 0; right: 4%; height: 28vh; width: 270px; display: flex; align-items: center; justify-content: center; padding: 20px 25px; border-radius: 0 0 40px 40px; font-size: 3.8rem; text-shadow: 0 3px 6px rgba(0,0,0,0.4); z-index: 9999; }
+        .brand-logo-section { display: flex; align-items: flex-start; gap: 18px; position: absolute; left: 5vw; top: 5vh; z-index: 15; color: white; }
+        .arabic-logo-side, .english-logo-side { display: flex; flex-direction: column; align-items: center; }
+        .logo-arb-title { font-size: 3rem; font-weight: 900; line-height: 1.1; }
+        .logo-arb-sub { font-size: 1.2rem; font-weight: bold; letter-spacing: 4px; margin-top: 10px; }
+        .logo-eng-title { font-size: 2.9rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; }
+        .logo-eng-sub { font-size: 1.2rem; font-weight: 600; letter-spacing: 1px; margin-top: 10px; }
+        .center-cart-divider { font-size: 2.6rem; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 3px 10px rgba(0,0,0,0.25)); margin-top: 5px; }
+        .celebration-svg-container { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; z-index: 4; }
+        .animated-balloon { animation: floatLiveBalloon 4s infinite alternate ease-in-out; transform-origin: 650px 420px; }
+        @keyframes floatLiveBalloon { 0% { transform: translateY(0) rotate(-2deg); } 100% { transform: translateY(-15px) rotate(2deg); } }
+
+        /* شريط عدادات النقاط والوقت علوي لشاشة اللعب */
+        .game-header-bar {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid #ffffff;
+            padding: 12px 25px;
+            border-radius: 25px;
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 1.4rem;
+            margin-top: 2vh;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .timer-box { color: #ffffcc; }
+        .score-box { color: #ffd700; }
+
+        #game-play-area { width: 100%; height: 80vh; position: relative; overflow: hidden; margin-top: 2vh; }
+        
+        /* 🛍️ تساقط منتجات كازيون كإيموجيات حقيقية مريحة للعين */
+        .falling-item { 
+            position: absolute; 
+            font-size: 3.8rem; 
+            z-index: 22; 
+            cursor: pointer; 
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+        }
+
+        /* 🚶‍♂️🛒 كائن العميل الممسك في يده عربة التسوق - تم تصفير الـ transition للحركة الفورية الصاروخية */
+        .player-customer {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 4.5rem; 
+            white-space: nowrap; 
+            z-index: 25;
+            transition: none !important; /* إلغاء التدرج تماماً لسرعة استجابة فورية خفيفة */
+        }
+        .player-customer.stunned { filter: grayscale(1) contrast(0.8); }
+
+        /* ⚠️ تصميم نافذة الرسالة التنبيهية فوق العميل مباشرة */
+        .stun-popup {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ffffff;
+            border: 3px solid #ff3300;
+            border-radius: 20px;
+            padding: 12px 18px;
+            width: 260px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 28;
+            display: none; 
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { 0% { transform: translateX(-50%) scale(0.5); opacity: 0; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
+        .stun-emoji { font-size: 2.8rem; margin-bottom: 5px; }
+        .stun-text { color: #cc1100; font-size: 0.95rem; font-weight: 900; line-height: 1.4; }
+
+        /* تنسيقات واجهات شاشة النتيجة الفخمة */
+        .confetti { position: absolute; top: -20px; border-radius: 3px; z-index: 32; pointer-events: none; animation: fall linear infinite; }
+        @keyframes fall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(105vh) rotate(720deg); opacity: 0.3; } }
+        .win-title { color: #ffffff; font-size: 2.8rem; font-weight: 900; text-align: center; text-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-top: 5vh; z-index: 35; }
+        .win-subtitle { color: #ffffcc; font-size: 1.6rem; font-weight: bold; text-align: center; text-shadow: 0 2px 8px rgba(0,0,0,0.4); margin-bottom: 2vh; z-index: 35; }
+        .kazyon-card { background: linear-gradient(135deg, #ffd166 0%, #f7a01b 100%); border: 4px solid #ffffff; border-radius: 35px; width: 92%; max-width: 480px; padding: 30px 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.4), inset 0 0 20px rgba(255,255,255,0.4); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 35; }
+        .card-main-text { color: #00116b; font-size: 2.3rem; font-weight: 900; }
+        .card-condition-badge { background-color: #ff5500; color: #ffffff; font-size: 1.1rem; font-weight: bold; padding: 6px 20px; border-radius: 20px; }
+        .coupon-code-container { background-color: #002266; border: 3px dashed #ffffff; border-radius: 18px; width: 90%; padding: 12px; color: #ffffff; font-size: 2.2rem; font-weight: 900; letter-spacing: 2px; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .date-badge { background-color: #0055cc; color: #ffffff; font-size: 1.1rem; font-weight: bold; padding: 6px 20px; border-radius: 12px; }
+        .expiry-warning { color: #ff3300; font-size: 1rem; font-weight: 900; background: rgba(255,255,255,0.8); padding: 4px 12px; border-radius: 10px; }
+        .back-button { background: linear-gradient(135deg, #99ccff 0%, #3399ff 100%); color: #00116b; border: 2px solid #ffffff; padding: 14px 45px; font-size: 1.5rem; font-weight: bold; border-radius: 20px; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.25); z-index: 35; }
+        .engineer-footer { color: #ffffff; font-size: 2.2rem; font-weight: 900; text-align: center; z-index: 35; margin-bottom: 2vh; }
+        .corner-flower { position: absolute; font-size: 4.5rem; opacity: 0.8; z-index: 32; }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================== -->
+    <!-- 1️⃣ الشاشة الأولى: الشاشة الافتتاحية المكتملة -->
+    <!-- ============================================== -->
+    <div id="start-screen" class="game-screen">
+        <div class="kazyon-top-banner">
+            <div class="brand-logo-section">
+                <div class="arabic-logo-side">
+                    <div class="logo-arb-title">كازيون</div>
+                    <div class="logo-arb-sub">- ماركت -</div>
+                </div>
+                <div class="center-cart-divider">🛒</div>
+                <div class="english-logo-side">
+                    <div class="logo-eng-title">kazyon</div>
+                    <div class="logo-eng-sub">-Market-</div>
+                </div>
+            </div>
+            <div class="promo-navy-badge">مفاجأة<br>كازيون</div>
+        </div>
+
+        <div class="corner-glow-beam glow-top-right"></div>
+        <div class="corner-glow-beam glow-top-left"></div>
+        <div class="corner-glow-beam glow-bottom-right"></div>
+        <div class="corner-glow-beam glow-bottom-left"></div>
+
+        <div class="glitter-sparkle" style="top: 30vh; left: 20%; width: 5px; height: 5px;"></div>
+        <div class="glitter-sparkle" style="top: 45vh; right: 15%; width: 6px; height: 6px;"></div>
+        <div class="glitter-sparkle" style="top: 60vh; left: 45%; width: 4px; height: 4px;"></div>
+        <div class="glitter-sparkle" style="top: 75vh; right: 30%; width: 5px; height: 5px;"></div>
+
+        <svg class="celebration-svg-container" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" xmlns="http://w3.org">
+            <defs>
+                <linearGradient id="ribbon-grad-pure" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff3c00" /><stop offset="20%" stop-color="#ff7700" /><stop offset="50%" stop-color="#ffd700" /><stop offset="80%" stop-color="#fff066" /><stop offset="100%" stop-color="#ffaa00" /></linearGradient>
+                <radialGradient id="balloon-grad-pure" cx="35%" cy="35%" r="65%"><stop offset="0%" stop-color="#ffffcc" /><stop offset="25%" stop-color="#ff7700" /><stop offset="80%" stop-color="#ff3c00" /><stop offset="100%" stop-color="#cc1100" /></radialGradient>
+                <filter id="glow-heavy-pure" x="-30%" y="-30%" width="160%" height="140%"><feGaussianBlur stdDeviation="15" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+                <filter id="ice-white-glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="8" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+                <filter id="cart-neon-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+            </defs>
+
+            <path d="M -40,240 C 200,455 500,455 740,265 L 740,335 C 500,525 200,525 -40,310 Z" fill="#000000" opacity="0.45" filter="url(#glow-heavy-pure)" />
+            <path id="text-path-ribbon-pure" d="M -30,246 C 150,461 500,461 740,271" fill="none" />
+            <path d="M -50,220 C 150,435 500,435 740,245 L 740,315 C 500,505 150,505 -50,290 Z" fill="url(#ribbon-grad-pure)" stroke="#ffffff" stroke-width="4" filter="url(#glow-heavy-pure)" />
+
+            <text font-size="28" font-weight="900" font-family="system-ui, sans-serif">
+                <textPath href="#text-path-ribbon-pure" startOffset="45%" text-anchor="middle" fill="#ffffff" filter="drop-shadow(0 2px 0 #000000) drop-shadow(0 4px 8px rgba(0,0,0,0.65))">
+                    اخطف العرض و الحق املأ سلتك 🛒
+                </textPath>
+            </text>
+
+            <g filter="url(#ice-white-glow)">
+                <rect x="150" y="530" width="700" height="90" rx="30" ry="30" fill="rgba(240, 252, 255, 0.9)" stroke="#00f2fe" stroke-width="3" />
+                <text x="500" y="585" fill="#e64a00" font-size="20" font-weight="900" text-anchor="middle">
+                    ✨ تحدي السرعة وصل! اجمع 100 نقطة و اقفل فاتورتك بخصم 15% ✨
+                </text>
+            </g>
+
+            <g transform="translate(375, 660)" pointer-events="all" style="cursor: pointer;" onclick="startActualGame()">
+                <text x="125" y="25" fill="#ffffff" font-size="16" font-weight="900" text-anchor="middle">
+                    اضغط على العربة و ابدأ معانا فى كازيون ✨
+                </text>
+                <path d="M 40,75 L 10,78 L 35,82 L 5,85 L 35,88 L 15,92 L 40,95" fill="none" stroke="#ff5500" stroke-width="4.5" stroke-linecap="round"/>
+                <path d="M 40,77 L 15,80 L 35,84 L 10,87 L 35,90" fill="none" stroke="#ffd700" stroke-width="4" stroke-linecap="round"/>
+                <g filter="url(#cart-neon-glow)">
+                    <path d="M 50,45 L 75,45 L 90,85 L 195,85 L 210,45 L 75,45" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M 90,85 L 110,115 L 180,115 L 195,85" fill="none" stroke="#00f2fe" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="110" cy="125" r="12" fill="#1a335d" stroke="#ffffff" stroke-width="3"/><circle cx="180" cy="125" r="12" fill="#1a335d" stroke="#ffffff" stroke-width="3"/>
+                </g>
+            </g>
+
+            <!-- 🎈 البالونة المعدلة بديل متوسط الطول ومتناسق تماماً بنفس لون البالونة الأصلي -->
+            <g class="animated-balloon">
+                <!-- رسم خيط متوسط الطول ومائل بنفس لون تدرج البالونة الأحمر الناري -->
+                <path d="M 650,475 Q 640,500 655,525" fill="none" stroke="#ff3c00" stroke-width="3.5" stroke-linecap="round"/>
+                <path d="M 645,475 L 655,475 L 650,469 Z" fill="#ff3c00" stroke="#ff3c00" stroke-width="2"/>
+                <ellipse cx="650" cy="420" rx="44" ry="58" fill="url(#balloon-grad-pure)" />
+                <text x="650" y="426" fill="#ffffff" font-size="16" font-weight="900" text-anchor="middle">كازيون</text>
+            </g>
+            <text x="500" y="965" fill="#ffffff" font-size="34" font-weight="900" text-anchor="middle" filter="url(#ice-white-glow)">👑 المهندسة الصغيرة 👑</text>
+
+            <path d="M 80,320 Q 50,370 100,420 T 60,520 T 110,620 T 70,720 T 120,820" fill="none" stroke="#ff5500" stroke-width="4.5" stroke-linecap="round" />
+            <path d="M 920,260 Q 890,310 940,360 T 900,460 T 950,560 T 910,660 T 960,760" fill="none" stroke="#ffd700" stroke-width="4" stroke-linecap="round" />
+        </svg>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 2️⃣ الشاشة الثانية: شاشة اللعبة النظيفة تماماً -->
+    <!-- ============================================== -->
+    <div id="game-screen" class="game-screen" style="display: none;">
+        <div class="game-header-bar">
+            <div class="score-box">🎯 النقاط: <span id="game-score-val">0</span> / 100</div>
+            <div class="timer-box">⏳ الوقت: <span id="game-timer-val">60</span> ثانية</div>
+        </div>
+
+        <div id="game-play-area">
+            <div id="stun-notification" class="stun-popup">
+                <div class="stun-emoji">😵</div>
+                <div class="stun-text">تم توقف سلة التسوق لمدة 5 ثوانى بسبب جمع سلة القمامة مع المنتجات</div>
+            </div>
+
+            <!-- العميل الممسك بيده عربة التسوق الكبيرة 🚶‍♂️🛒 -->
+            <div id="customer-avatar" class="player-customer">🚶‍♂️🛒</div>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 3️⃣ الشاشة الثالثة: شاشة النتيجة البنفسجية الفخمة -->
+    <!-- ============================================== -->
+    <div id="result-screen" class="game-screen" style="display: none;">
+        <div class="corner-flower" style="top:2vh; right:4%;">🌸</div>
+        <div class="corner-flower" style="top:2vh; left:4%;">🌸</div>
+        <div class="corner-flower" style="bottom:2vh; right:4%;">🌸</div>
+        <div class="corner-flower" style="bottom:2vh; left:4%;">🌸</div>
+
+        <div>
+            <h1 id="result-title-text" class="win-title">🥳 ألف مليون مبروووك يا بطل . 🥳</h1>
+            <p id="result-subtitle-text" class="win-subtitle">أنت الآن يا بطل حصلت على كارت كازيون .</p>
+        </div>
+
+        <div class="kazyon-card">
+            <div class="card-main-text">كارت خصم كازيون 15%</div>
+            <div class="card-condition-badge">على فاتورة الـ 400 جنيه</div>
+            <div class="coupon-code-container">
+                <span>🔹</span><span id="final-promo-code">KAZYON15</span>
+            </div>
+            <div class="date-badge">
+                تاريخ الكسب الحقيقي: <span id="live-date-val">00/00/0000</span>
+            </div>
+            <div class="expiry-warning">
+                ⚠️ صالح لمدة 24 ساعة فقط من تاريخ وموعد الإصدار الواضح ⚠️
+            </div>
+        </div>
+
+        <button class="back-button" onclick="returnToMainMenu()">العودة للرئيسية</button>
+        <div class="engineer-footer">👑 المهندسة الصغيرة 👑</div>
+    </div>
+    <script>
+        let currentScore = 0;
+        let gameTimeLeft = 60;
+        let isStunned = false;
+        let totalTrashSpawned = 0; // عداد قفل عدد سلات القمامة بدقة طوال اللعبة
+        
+        let countdownTimerInterval;
+        let coreSpawnerInterval;
+        let musicInterval; // مؤقت لتكرار النغمة الموسيقية الهادئة الجديدة في الخلفية
+        
+        // 🌾🥛 منتجات كازيون كإيموجيات حقيقية مباشرة ومريحة للعين
+        const goodProducts = [
+            '🌾', '🥛', '🧃', '🍫', '🧀', '🍞', '🍪', '🍅', '🥑', '🍏',
+            '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🌽', '🥕',
+            '🥔', '🥩', '🍗', '🐟', '🥫', '🍝', '🍚', '🥤', '🧼', '🧴'
+        ];
+        
+        const trashObstacle = '🗑️'; // سلة القمامة العائق
+
+        // 🎵 النغمة الهادئة: تعزف ترددات ناعمة ومسترخية ومتباعدة تريح الأعصاب (صوت بيانو خفيف)
+        function playLoopingMusic() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            
+            // سلم موسيقي هادئ وناعم جداً يعطي شعوراً بالهدوء والسلام التام (Sine Calm Piano)
+            const calmMelody = [261.63, 329.63, 392.00, 440.00, 392.00, 329.63, 293.66, 261.63]; 
+            
+            function playTune() {
+                if (gameTimeLeft <= 0 || currentScore >= 100) return; 
+                let time = ctx.currentTime;
+                
+                calmMelody.forEach((freq, index) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc.type = 'sine'; // موجة Sine للحصول على أنعم وأهدأ صوت ممكن بدون أي حدة
+                    osc.frequency.setValueAtTime(freq, time);
+                    
+                    gain.gain.setValueAtTime(0.03, time); // مستوى صوت منخفض جداً وهادئ في الخلفية
+                    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.35); // سحب النغمة بنعومة
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.start(time);
+                    osc.stop(time + 0.35);
+                    time += 0.22; // ترك مسافة متباعدة ومريحة بين النغمات لتبث الهدوء والتركيز
+                });
+            }
+            
+            playTune(); 
+            musicInterval = setInterval(playTune, 2000); // تكرار النغمة الهادئة بفواصل متباعدة طوال اللعب
+        }
+
+        function startActualGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            
+            currentScore = 0;
+            gameTimeLeft = 60;
+            isStunned = false;
+            totalTrashSpawned = 0; 
+            
+            document.getElementById('game-score-val').innerText = currentScore;
+            document.getElementById('game-timer-val').innerText = gameTimeLeft;
+            document.getElementById('stun-notification').style.display = 'none';
+            document.getElementById('customer-avatar').classList.remove('stunned');
+            document.getElementById('customer-avatar').style.left = '50%';
+
+            const playArea = document.getElementById('game-play-area');
+            
+            // إصلاح شامل للمسح والتفاعل الفوري المباشر مع حركة الإصبع
+            playArea.addEventListener('mousemove', handlePointerMove);
+            playArea.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+            // تشغيل النغمة الموسيقية الهادئة فوراً مع بداية اللعب
+            playLoopingMusic();
+
+            countdownTimerInterval = setInterval(runGameTimer, 1000);
+            
+            // 🔒 تم تعديل المؤقت ليكون كل (500ms) لزيادة المنتجات خطوة صغيرة وتكثيف السقوط بشكل حماسي وموزون
+            coreSpawnerInterval = setInterval(spawnFallingObjects, 500); 
+        }
+
+        function handlePointerMove(e) {
+            if (isStunned) return;
+            const avatar = document.getElementById('customer-avatar');
+            const playAreaRect = document.getElementById('game-play-area').getBoundingClientRect();
+            let newLeft = e.clientX - playAreaRect.left;
+            
+            if (newLeft < 50) newLeft = 50;
+            if (newLeft > playAreaRect.width - 50) newLeft = playAreaRect.width - 50;
+            avatar.style.left = newLeft + 'px';
+        }
+
+        function handleTouchMove(e) {
+            if (isStunned) return;
+            e.preventDefault();
+            const touch = e.touches[0]; // قراءة الإصبع الأول بدقة وسرعة تامة
+            const avatar = document.getElementById('customer-avatar');
+            const playAreaRect = document.getElementById('game-play-area').getBoundingClientRect();
+            let newLeft = touch.clientX - playAreaRect.left;
+            
+            if (newLeft < 50) newLeft = 50;
+            if (newLeft > playAreaRect.width - 50) newLeft = playAreaRect.width - 50;
+            avatar.style.left = newLeft + 'px';
+        }
+
+        function spawnFallingObjects() {
+            if (currentScore >= 100 || gameTimeLeft <= 0) return;
+
+            const playArea = document.getElementById('game-play-area');
+            
+            let spawnTrashNow = false;
+            if (totalTrashSpawned < 2 && Math.random() < 0.08 && gameTimeLeft < 50 && gameTimeLeft > 10) {
+                spawnTrashNow = true;
+                totalTrashSpawned++; 
+            }
+
+            if (spawnTrashNow) {
+                createItemNode(playArea, trashObstacle, 'trash');
+            } else {
+                createItemNode(playArea, goodProducts[Math.floor(Math.random() * goodProducts.length)], 'product');
+            }
+        }
+
+        function createItemNode(parent, content, type) {
+            const element = document.createElement('div');
+            element.className = 'falling-item';
+            element.innerText = content;
+            element.setAttribute('data-type', type);
+            element.style.left = Math.random() * 88 + '%';
+            element.style.top = '-60px';
+            parent.appendChild(element);
+
+            let verticalPosition = -60;
+            let itemFallSpeed = 5.2 + Math.random() * 2.2; 
+
+            let fallTracker = setInterval(() => {
+                verticalPosition += itemFallSpeed;
+                element.style.top = verticalPosition + 'px';
+
+                const avatar = document.getElementById('customer-avatar');
+                const avatarRect = avatar.getBoundingClientRect();
+                const elementRect = element.getBoundingClientRect();
+
+                if (elementRect.bottom >= avatarRect.top && 
+                    elementRect.right >= avatarRect.left && 
+                    elementRect.left <= avatarRect.right && 
+                    elementRect.top <= avatarRect.bottom) {
+                    
+                    clearInterval(fallTracker);
+                    element.remove();
+                    processPlayerCatch(element.getAttribute('data-type'));
+                }
+
+                if (verticalPosition > window.innerHeight * 0.8) {
+                    clearInterval(fallTracker);
+                    element.remove();
+                }
+            }, 20);
+        }
+        // حساب النقاط الفردية أو تفعيل عقوبة التجميد والرسالة المنبثقة فوق العميل
+        function processPlayerCatch(type) {
+            if (isStunned) return;
+
+            if (type === 'product') {
+                currentScore += 1; // كل منتج كازيون يساوي نقطة واحدة فقط دقيقة
+                document.getElementById('game-score-val').innerText = currentScore;
+                
+                if (currentScore >= 100) {
+                    endGameSession(true);
+                }
+            } else if (type === 'trash') {
+                isStunned = true;
+                
+                const avatar = document.getElementById('customer-avatar');
+                const notification = document.getElementById('stun-notification');
+                
+                avatar.classList.add('stunned');
+                notification.style.left = avatar.style.left;
+                notification.style.display = 'block';
+
+                setTimeout(() => {
+                    isStunned = false;
+                    avatar.classList.remove('stunned');
+                    notification.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function runGameTimer() {
+            gameTimeLeft--;
+            document.getElementById('game-timer-val').innerText = gameTimeLeft;
+            
+            if (gameTimeLeft <= 0) {
+                endGameSession(currentScore >= 100);
+            }
+        }
+
+        function endGameSession(isWin) {
+            clearInterval(countdownTimerInterval);
+            clearInterval(coreSpawnerInterval);
+            clearInterval(musicInterval); // إيقاف الموسيقى فوراً عند انتهاء اللعبة
+            
+            document.querySelectorAll('.falling-item').forEach(el => el.remove());
+
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'flex';
+
+            if (isWin) {
+                document.getElementById('result-title-text').innerText = "🥳 ألف مليون مبروووك يا بطل . 🥳";
+                document.getElementById('result-subtitle-text').innerText = "أنت الآن يا بطل حصلت على كارت كازيون .";
+                document.getElementById('final-promo-code').innerText = "KAZYON15";
+                
+                setLiveDate();
+                createConfettiEffects();
+            } else {
+                document.getElementById('result-title-text').innerText = "🛑 انتهى الوقت يا بطل 🛑";
+                document.getElementById('result-subtitle-text').innerText = `جمعت ${currentScore} نقطة، تحتاج 100 نقطة للفوز!`;
+                document.getElementById('final-promo-code').innerText = "حاول مرة أخرى";
+            }
+        }
+
+        // 📅 دالة حساب وتحديث التاريخ تلقائياً بنسبة 100% يومياً لحماية الشركة من الغش
+        function setLiveDate() {
+            const today = new Date();
+            const day = String(today.getDate()).padStart(2, '0');
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const year = today.getFullYear();
+            document.getElementById('live-date-val').innerText = `${day}/${month}/${year}`;
+        }
+
+        function createConfettiEffects() {
+            const colors = ['#ff5500', '#ffcc00', '#00f2fe', '#ffffff', '#ff33cc', '#33cc33'];
+            for (let i = 0; i < 45; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.width = Math.random() * 8 + 6 + 'px';
+                confetti.style.height = Math.random() * 12 + 6 + 'px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
+                confetti.style.animationDelay = Math.random() * 1.5 + 's';
+                document.getElementById('result-screen').appendChild(confetti);
+            }
+        }
+
+        function returnToMainMenu() {
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
+            document.querySelectorAll('.confetti').forEach(el => el.remove());
+        }
+    </script>
+</body>
+</html>
